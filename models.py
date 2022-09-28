@@ -1,15 +1,17 @@
 import matplotlib.pyplot as plt
 import climlab
 
-# Define observed real-world constants
-INSOLATION_OBSERVED = 341.3  # in W/m2
-OLR_OBSERVED = 238.5  # Outgoing longwave radiation in W/m2
-SIGMA = 5.67E-8  # Stefan-Boltzmann constant
-T_OBSERVED = 288.  # global average surface temperature
-TAU = OLR_OBSERVED / SIGMA / T_OBSERVED ** 4  # tuned value of transmissivity to model greenhouse model
-F_REFLECTED = 101.9  # reflected shortwave flux in W/m2
-ALPHA = F_REFLECTED / INSOLATION_OBSERVED # global albedo
-ASR_OBSERVED = INSOLATION_OBSERVED - F_REFLECTED  # Absorbed shortwave radiation in W/m2
+
+class Constants:
+    # Define observed real-world constants
+    INSOLATION_OBSERVED = 341.3  # area-averaged incoming solar radiation in W/m2
+    OLR_OBSERVED = 238.5  # Outgoing longwave radiation in W/m2
+    SIGMA = 5.67E-8  # Stefan-Boltzmann constant
+    T_OBSERVED = 288.  # global average surface temperature
+    TAU = OLR_OBSERVED / SIGMA / T_OBSERVED ** 4  # tuned value of transmissivity to model greenhouse model
+    F_REFLECTED = 101.9  # reflected shortwave flux in W/m2
+    ALPHA = F_REFLECTED / INSOLATION_OBSERVED  # global albedo
+    ASR_OBSERVED = INSOLATION_OBSERVED - F_REFLECTED  # Absorbed shortwave radiation in W/m2
 
 
 class History:
@@ -40,7 +42,7 @@ class Simulation:
         self.history = History()
 
 
-class EBM(Simulation):
+class ZeroDimensionalEnergyBalanceModel(Simulation):
     # 0-dimensional energy balance model
     def __init__(self, name, initial_temperature=30.0, *args, **kwargs):
         # params name: name of simulation
@@ -75,15 +77,15 @@ class EBM(Simulation):
         # Longwave radiation process (outgoing)
         olr = climlab.radiation.Boltzmann(name='OutgoingLongwave',
                                           state=state,
-                                          tau=TAU,  # transmissivity of atmosphere
+                                          tau=Constants.TAU,  # transmissivity of atmosphere
                                           eps=1.,   # emissivity of surface of planet
                                           timestep=delta_t)
 
         # Shortwave radiation process (incoming)
         asr = climlab.radiation.SimpleAbsorbedShortwave(name='AbsorbedShortwave',
                                                         state=state,
-                                                        insolation=INSOLATION_OBSERVED,
-                                                        albedo=ALPHA,
+                                                        insolation=Constants.INSOLATION_OBSERVED,
+                                                        albedo=Constants.ALPHA,
                                                         timestep=delta_t)
 
         # Couple time-dependent processes to form EBM

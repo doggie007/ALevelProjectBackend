@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from models import EBM
+from models import ZeroDimensionalEnergyBalanceModel
 from pydantic import BaseModel
-from typing import List
+
 
 class ModelInput(BaseModel):
     model_name: str # Arbitrary name for this simulation
@@ -20,7 +20,7 @@ async def root():
 async def execute(model_input: ModelInput):
     # Runs climate model given the model name and the initial temperature in degrees C
     # Returns temperature and time as list of floats
-    model = EBM(model_input.model_name, model_input.initial_temperature)
+    model = ZeroDimensionalEnergyBalanceModel(model_input.model_name, model_input.initial_temperature)
     model.run()
     simulation_data = model.get_data()
     return simulation_data
