@@ -25,7 +25,7 @@ class History:
         # params state: climlab domain object that stores its current information
         # params current_time: current time elapsed from start given in seconds
         self.temperature.extend(state.Ts[0])
-        self.time.append(current_time / (60. * 60. * 24.)) # normalise from seconds to days
+        self.time.append(current_time / (60. * 60. * 24. * 30)) # change time from seconds to months
 
     def visualise(self):
         # Plots temperature vs time graph (for debugging purposes)

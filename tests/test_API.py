@@ -27,7 +27,7 @@ class TestAPIEndpoints(unittest.TestCase):
         simulation_data = model.get_data()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"temperatures": simulation_data["temperatures"], "times": simulation_data["times"]})
+        self.assertEqual(response.json(), {"temperatures": simulation_data["temperatures"], "times": simulation_data["times"], "model_name": model_name, "initial_temperature": initial_temperature})
 
     def test_execute_missing_required_parameters(self):
         # Raises 422 error if required parameter is missing
