@@ -1,7 +1,7 @@
 import unittest
 from fastapi.testclient import TestClient
 from main import app
-from models import ZeroDimensionalEnergyBalanceModel
+from models import ZeroDimensionalEnergyBalanceModel, Constants
 
 class TestAPIEndpoints(unittest.TestCase):
     def test_read_root(self):
@@ -19,19 +19,30 @@ class TestAPIEndpoints(unittest.TestCase):
         model_name = "Arbitrary Name"
         initial_temperature = 30
 
-        response = client.post("/execute/", json={"model_name": model_name, "initial_temperature": initial_temperature})
+        response = client.post("/execute/", json={"model_name": model_name,
+                                                  "initial_temperature": initial_temperature,
+                                                  "insolation": Constants.INSOLATION_OBSERVED,
+                                                  "albedo": Constants.ALPHA,
+                                                  "tau": Constants.TAU
+                                                  })
 
         # Run model for getting the correct data
-        model = ZeroDimensionalEnergyBalanceModel(model_name, initial_temperature)
+        model = ZeroDimensionalEnergyBalanceModel(model_name,
+                                                  initial_temperature,
+                                                  Constants.INSOLATION_OBSERVED,
+                                                  Constants.ALPHA,
+                                                  Constants.TAU)
         model.run()
         simulation_data = model.get_data()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"temperatures": simulation_data["temperatures"], "times": simulation_data["times"], "model_name": model_name, "initial_temperature": initial_temperature})
+        self.assertEqual(response.json(),
+                         {"temperatures": simulation_data["temperatures"], "times": simulation_data["times"],
+                          "model_name": model_name, "initial_temperature": initial_temperature,
+                          "insolation": Constants.INSOLATION_OBSERVED, "albedo": Constants.ALPHA, "tau": Constants.TAU})
 
     def test_execute_missing_required_parameters(self):
-        # Raises 422 error if required parameter is missing
-        # Test when parameter for initial temperature is missing
+        # Raises 422 error if required parameters are missing
         client = TestClient(app)
         model_name = "Arbitrary Name"
         response = client.post("/execute/", json={"model_name": model_name})
@@ -42,16 +53,19 @@ class TestAPIEndpoints(unittest.TestCase):
         client = TestClient(app)
         model_name = "Arbitrary Name"
         initial_temperature = "one-hundred"
-        response = client.post("/execute/", json={"model_name": model_name, "initial_temperature": initial_temperature})
+        response = client.post("/execute/", json={"model_name": model_name, "initial_temperature": initial_temperature,
+                                                  "insolation": Constants.INSOLATION_OBSERVED, "albedo": Constants.ALPHA, "tau": Constants.TAU})
         self.assertEqual(response.status_code, 422)
 
-    def test_execute_invalid_parameter_value(self):
+    def test_execute_invalid_temperature_value(self):
         # Raises 400 error if initial temperature value is not within realistic range
         client = TestClient(app)
         model_name = "Arbitrary Name"
         initial_temperature = 1000
-        response = client.post("/execute/", json={"model_name": model_name, "initial_temperature": initial_temperature})
+        response = client.post("/execute/", json={"model_name": model_name, "initial_temperature": initial_temperature,
+                                                  "insolation": Constants.INSOLATION_OBSERVED, "albedo": Constants.ALPHA, "tau": Constants.TAU})
         self.assertEqual(response.status_code, 400)
+
 
 
 

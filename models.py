@@ -37,18 +37,21 @@ class History:
 
 class Simulation:
     # Base class for the climate models to store basic information about the simulation
-    def __init__(self, name):
+    def __init__(self, name, initial_temperature):
         self.name = name
+        self.initial_temperature = initial_temperature
         self.history = History()
 
 
 class ZeroDimensionalEnergyBalanceModel(Simulation):
     # 0-dimensional energy balance model
-    def __init__(self, name, initial_temperature=30.0, *args, **kwargs):
+    def __init__(self, name, initial_temperature, insolation, albedo, tau):
         # params name: name of simulation
         # params initial_temperature: temperature in degrees C
-        super().__init__(name)
-        self.initial_temperature = initial_temperature
+        super().__init__(name, initial_temperature)
+        self.insolation = insolation
+        self.albedo = albedo
+        self.tau = tau
 
     def get_data(self):
         # Dictionary of temperature and time for ease of converting to response object
@@ -77,15 +80,15 @@ class ZeroDimensionalEnergyBalanceModel(Simulation):
         # Longwave radiation process (outgoing)
         olr = climlab.radiation.Boltzmann(name='OutgoingLongwave',
                                           state=state,
-                                          tau=Constants.TAU,  # transmissivity of atmosphere
+                                          tau=self.tau,  # transmissivity of atmosphere
                                           eps=1.,   # emissivity of surface of planet
                                           timestep=delta_t)
 
         # Shortwave radiation process (incoming)
         asr = climlab.radiation.SimpleAbsorbedShortwave(name='AbsorbedShortwave',
                                                         state=state,
-                                                        insolation=Constants.INSOLATION_OBSERVED,
-                                                        albedo=Constants.ALPHA,
+                                                        insolation=self.insolation,
+                                                        albedo=self.albedo,
                                                         timestep=delta_t)
 
         # Couple time-dependent processes to form EBM
