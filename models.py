@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import climlab
+import fair
+from fair.RCPs import rcp26, rcp45, rcp60, rcp85
 
+# Climate models
 
 class Constants:
     # Define observed real-world constants
@@ -20,17 +23,22 @@ class History:
         self.temperature = []  # in degrees Celsius
         self.time = []  # in days
 
-    def record(self, state, current_time):
+    def record(self, temperature, current_time):
         # Stores the data of one timestep
-        # params state: climlab domain object that stores its current information
-        # params current_time: current time elapsed from start given in seconds
-        self.temperature.extend(state.Ts[0])
-        self.time.append(current_time / (60. * 60. * 24. * 30)) # change time from seconds to months
+        # params state: current temperature in degrees C
+        # params current_time: current time elapsed from start given in years
+        self.temperature.append(temperature)
+        self.time.append(current_time)
+
+    def record_all(self, temperatures, times):
+        # Stores the temperature and year data for all supplied timesteps
+        self.temperature.extend(temperatures)
+        self.time.extend(times)
 
     def visualise(self):
         # Plots temperature vs time graph (for debugging purposes)
         plt.plot(self.time, self.temperature)
-        plt.xlabel("Time (days)")
+        plt.xlabel("Time (years)")
         plt.ylabel("Temperature ($^\circ$C)")
         plt.show()
 
@@ -42,6 +50,14 @@ class Simulation:
         self.initial_temperature = initial_temperature
         self.history = History()
 
+    def show_history(self):
+        # Visualise temperature vs time so far
+        self.history.visualise()
+
+    def get_temperature_time_data(self):
+        # Dictionary of temperature and time for ease of converting to response object
+        return {"temperatures": self.history.temperature, "times": self.history.time}
+
 
 class ZeroDimensionalEnergyBalanceModel(Simulation):
     # 0-dimensional energy balance model
@@ -52,14 +68,6 @@ class ZeroDimensionalEnergyBalanceModel(Simulation):
         self.insolation = insolation
         self.albedo = albedo
         self.tau = tau
-
-    def get_data(self):
-        # Dictionary of temperature and time for ease of converting to response object
-        return {"temperatures": self.history.temperature, "times": self.history.time}
-
-    def show_history(self):
-        # Visualise temperature vs time so far
-        self.history.visualise()
 
     def run(self):
         # Sets up climate model and runs it in accordance with time
@@ -97,7 +105,41 @@ class ZeroDimensionalEnergyBalanceModel(Simulation):
 
         # Running the simulation
         # step forward in time to run climate model
-        self.history.record(state, 0.) # Record initial values
+        self.history.record(self.initial_temperature, 0) # Record initial values
         for step_num in range(1, time_steps+1):
             ebm.step_forward()
-            self.history.record(state, step_num * delta_t)
+            # Only record every year
+            if step_num % 12 == 0:
+                current_temperature = state.Ts[0][0]
+                current_year = step_num * delta_t // (60.0 * 60.0 * 24 * 30 * 12) # Convert from seconds to years
+                self.history.record(current_temperature, current_year)
+
+
+
+class FAIRModel(Simulation):
+    # Finite Amplitude Impulse-Response model
+    # Carbon-cycle based model based on changes of CO2 Emissions
+
+    def __init__(self, name):
+        # Set initial temperature to 0.0 as investigating change from pre-industrial ages
+        super().__init__(name=name, initial_temperature=0.0)
+
+
+class RcpModel(FAIRModel):
+    # Runs FAIR model using pre-set RCP projection data
+
+    # Mapping of RCP scenario number to RCP scenario dataset
+    rcp_scenario_dict = {1: rcp26,
+                         2: rcp45,
+                         3: rcp60,
+                         4: rcp85}
+
+    def __init__(self, name, rcp_scenario):
+        super().__init__(name)
+        self.rcp_scenario = self.rcp_scenario_dict[rcp_scenario]
+
+    def run(self):
+        # Run the model using set RCP dataset
+        co2_concentrations, total_radioactive_forcing, temperatures = fair.forward.fair_scm(emissions=self.rcp_scenario.Emissions.emissions)
+        # Record all temperature data
+        self.history.record_all(temperatures, self.rcp_scenario.Emissions.year)

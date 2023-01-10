@@ -1,5 +1,5 @@
 import unittest
-from models import ZeroDimensionalEnergyBalanceModel, Constants
+from models import Constants, ZeroDimensionalEnergyBalanceModel, RcpModel
 from itertools import product
 
 
@@ -13,7 +13,7 @@ class TestOneDimensionalEnergyBalanceModel(unittest.TestCase):
 
         test_model = ZeroDimensionalEnergyBalanceModel("Arbitrary Name", 100, Constants.INSOLATION_OBSERVED, Constants.ALPHA, Constants.TAU)
         test_model.run()
-        test_data = test_model.get_data()
+        test_data = test_model.get_temperature_time_data()
         normalised_final_temperature = test_data["temperatures"][-1] + 273.15 # Converted from celsius to kelvin
 
         self.assertAlmostEqual(equilibrium_temperature, normalised_final_temperature, delta=absolute_tolerance)
@@ -50,6 +50,15 @@ class TestOneDimensionalEnergyBalanceModel(unittest.TestCase):
                 return
         self.assertTrue(True)
 
+class TestFAIRModel(unittest.TestCase):
+    def test_all_rcp_scenarios_run_successfully(self):
+        try:
+            for scenario in range(1, 5):
+                model = RcpModel(name="Arbitrary", rcp_scenario=scenario)
+                model.run()
+        except:
+            self.assertTrue(False)
+        self.assertTrue(True)
 
 
 
